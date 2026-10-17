@@ -29,11 +29,17 @@ df = load()
 st.title("🚇 Toei Train Service Explorer (Tokyo)")
 st.caption("Source: ODPT, GTFS timetable data (CC-BY-4.0)")
 
+HOURS = [f"{h:02d}:00" for h in range(24)]
+
 all_lines = sorted(df["line"].dropna().unique())
 lines = st.sidebar.multiselect("Line", all_lines, default=all_lines)
-h_min, h_max = st.sidebar.slider("Hour range", 0, 23, (0, 23))
+start, end = st.sidebar.select_slider(
+    "Time range", options=HOURS, value=(HOURS[0], HOURS[-1])
+)
+h_min, h_max = HOURS.index(start), HOURS.index(end)
 
 f = df[df["line"].isin(lines) & df["hour"].between(h_min, h_max)]
+
 if f.empty:
     st.info("Please select at least one line to display the data.")
     st.stop()
@@ -42,18 +48,27 @@ c1, c2, c3 = st.columns(3)
 c1.metric("Total departures", f"{f['departures'].sum():,}")
 c2.metric("Stations", f["station"].nunique())
 peak = f.groupby("hour")["departures"].sum().idxmax()
-c3.metric("Peak hour", f"{peak}:00")
+c3.metric("Peak hour", f"{peak:02d}:00")
 
 hourly = f.groupby("hour", as_index=False)["departures"].sum()
-st.plotly_chart(px.bar(hourly, x="hour", y="departures",
-                       title="Departures by hour"), use_container_width=True)
+hourly["time"] = hourly["hour"].map(lambda h: f"{h:02d}:00")
+st.plotly_chart(
+    px.bar(hourly, x="time", y="departures", title="Departures by hour",
+           category_orders={"time": HOURS}),
+    use_container_width=True)
 
 top = (f.groupby("station", as_index=False)["departures"].sum()
         .nlargest(15, "departures"))
-st.plotly_chart(px.bar(top, x="departures", y="station", orientation="h",
-                       title="Top 15 stations by departures")
-                  .update_yaxes(autorange="reversed"), use_container_width=True)
+st.plotly_chart(
+    px.bar(top, x="departures", y="station", orientation="h",
+           title="Top 15 stations by departures")
+      .update_yaxes(autorange="reversed"),
+    use_container_width=True)
 
 heat = f.groupby(["line", "hour"], as_index=False)["departures"].sum()
-st.plotly_chart(px.density_heatmap(heat, x="hour", y="line", z="departures",
-                                   title="Line × hour"), use_container_width=True)
+heat["time"] = heat["hour"].map(lambda h: f"{h:02d}:00")
+st.plotly_chart(
+    px.density_heatmap(heat, x="time", y="line", z="departures",
+                       title="Line × hour",
+                       category_orders={"time": HOURS}),
+    use_container_width=True)
