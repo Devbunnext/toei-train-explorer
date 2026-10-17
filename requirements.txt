@@ -2,3 +2,4 @@ streamlit
 duckdb
 plotly
 pandas
+scikit-learn
