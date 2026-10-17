@@ -3,3 +3,4 @@ duckdb
 plotly
 pandas
 scikit-learn
+anthropic
