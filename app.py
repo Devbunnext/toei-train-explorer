@@ -4,6 +4,13 @@ import plotly.express as px
 import streamlit as st
 
 st.set_page_config(page_title="Toei Train Explorer", layout="wide")
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+[data-testid="stToolbar"] {display: none;}
+</style>
+""", unsafe_allow_html=True)
 URL = "https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip"
 
 @st.cache_data
