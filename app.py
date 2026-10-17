@@ -34,6 +34,9 @@ lines = st.sidebar.multiselect("Line", all_lines, default=all_lines)
 h_min, h_max = st.sidebar.slider("Hour range", 0, 23, (0, 23))
 
 f = df[df["line"].isin(lines) & df["hour"].between(h_min, h_max)]
+if f.empty:
+    st.info("Please select at least one line to display the data.")
+    st.stop()
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Total departures", f"{f['departures'].sum():,}")
