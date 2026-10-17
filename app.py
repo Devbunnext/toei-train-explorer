@@ -79,3 +79,31 @@ st.plotly_chart(
                        title="Line × hour",
                        category_orders={"time": HOURS}),
     use_container_width=True)
+
+from sklearn.cluster import KMeans
+
+st.subheader("🤖 Station service patterns (ML clustering)")
+
+profile = f.pivot_table(index="station", columns="hour",
+                        values="departures", aggfunc="sum", fill_value=0)
+profile = profile.div(profile.sum(axis=1), axis=0)  # نسبة كل ساعة من خدمة المحطة
+
+k = st.slider("Number of groups", 2, 6, 3)
+
+if len(profile) >= k:
+    km = KMeans(n_clusters=k, n_init=10, random_state=42).fit(profile)
+    profile["group"] = km.labels_.astype(str)
+
+    avg = (profile.groupby("group").mean().reset_index()
+                  .melt(id_vars="group", var_name="hour", value_name="share"))
+    avg["time"] = avg["hour"].map(lambda h: f"{int(h):02d}:00")
+
+    st.plotly_chart(
+        px.line(avg, x="time", y="share", color="group",
+                category_orders={"time": HOURS},
+                title="Typical hourly pattern per group"),
+        use_container_width=True)
+
+    st.dataframe(profile[["group"]].reset_index())
+else:
+    st.info("Not enough stations for this number of groups.")
